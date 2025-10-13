@@ -12,6 +12,7 @@ import torch.nn as nn
 
 from ultralytics.nn.autobackend import check_class_names
 from ultralytics.nn.modules import (
+    IRCA,
     AIFI,
     C1,
     C2,
@@ -1667,6 +1668,19 @@ def parse_model(d, ch, verbose=True):
         elif m in frozenset(
             {Detect, WorldDetect, YOLOEDetect, Segment, YOLOESegment, Pose, OBB, ImagePoolingAttn, v10Detect}
         ):
+            '''
+            If parsing Detect head, dynamically calculate channels of "from" and append to args.
+            If parsing Segment head, set number of classes to nc.
+            '''
+
+            """
+            The channel flow in model construction:
+            1. Initially, 'ch' is the number of input image channels (typically 3).
+            2. As the network layers propagate forward, the 'ch' list records the output channels of each layer.
+            3. When building the Detect module, it fetches channel numbers from the 'ch' list using indices like [-16, 19, 22].
+            4. The final 'ch' parameter passed to the Detect module is a list like [256, 512, 1024].
+            """
+            
             args.append([ch[x] for x in f])
             if m is Segment or m is YOLOESegment:
                 args[2] = make_divisible(min(args[2], max_channels) * width, 8)
