@@ -74,6 +74,8 @@ dependencies = [
     "psutil", # system utilization
     "polars",
     "ultralytics-thop>=2.0.0", # FLOPs computation https://github.com/ultralytics/thop
+    "jupyter>=1.1.1",
+    "pandas>=2.3.3",
 ]
 
 # Optional dependencies ------------------------------------------------------------------------------------------------

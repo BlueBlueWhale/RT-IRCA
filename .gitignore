@@ -180,3 +180,4 @@ calibration_*.npy
 
 # paper / visualization / figures / tables
 paper/
+ultralytics/models/rt_irca/tests/
