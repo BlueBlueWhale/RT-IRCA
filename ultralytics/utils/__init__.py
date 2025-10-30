@@ -373,14 +373,28 @@ def plt_settings(rcparams=None, backend="Agg"):
                 plt.close("all")  # auto-close()ing of figures upon backend switching is deprecated since 3.8
                 plt.switch_backend(backend)
 
-            # Plot with backend and always revert to original backend
+            # Plot with backend and conditionally revert to original backend
             try:
                 with plt.rc_context(rcparams):
                     result = func(*args, **kwargs)
             finally:
                 if switch:
                     plt.close("all")
-                    plt.switch_backend(original_backend)
+                    # Only switch back if we're not in a headless environment and the original backend is not an interactive one that requires a display
+                    if (
+                        not original_backend.lower().startswith('headless')
+                        and not (
+                            original_backend.lower() in ['tkagg', 'qt5agg', 'qt4agg', 'macosx']
+                            and os.environ.get('DISPLAY', '') == ''
+                            and LINUX
+                        )
+                    ):
+                        try:
+                            plt.switch_backend(original_backend)
+                        except ImportError:
+                            # If switching back fails due to missing dependencies,
+                            # keep using the current backend
+                            pass
             return result
 
         return wrapper

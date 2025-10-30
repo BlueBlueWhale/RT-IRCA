@@ -102,7 +102,12 @@ from .transformer import (
     TransformerLayer,
 )
 
+from .custom import (
+    IRCA,
+)
+
 __all__ = (
+    "IRCA",
     "Conv",
     "Conv2",
     "LightConv",
