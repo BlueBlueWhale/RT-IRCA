@@ -1,9 +1,9 @@
 from ultralytics.nn.tasks import DetectionModel
-from ultralytics.models.rt_irca.utils.loss import MLKDLoss
+from .loss import MLKDLoss
 
 
 class RTIRCA(DetectionModel):
-    """Real-time Infrared Context Aggregation (RT-IRCA) for Substation Equipment Detection"""
+    """RT-IRCA (Real-time Infrared Context Aggregation) for Substation Equipment Detection"""
 
     def __init__(
         self,
@@ -20,6 +20,8 @@ class RTIRCA(DetectionModel):
         has_mut=True,
         teacher=None,
         layer_indices=[13, 16, 19, 22],
+        student_channels=None,
+        teacher_channels=None,
     ):
         """Initialize the RTIRCA model."""
         super().__init__(cfg, nc=nc, ch=ch, verbose=verbose)
@@ -32,6 +34,8 @@ class RTIRCA(DetectionModel):
         self.has_mut = has_mut
         self.teacher = teacher
         self.layer_indices = layer_indices
+        self.student_channels = student_channels
+        self.teacher_channels = teacher_channels
 
     def init_criterion(self):
         """Initialize the loss criterion for the model."""

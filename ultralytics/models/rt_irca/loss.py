@@ -1,11 +1,10 @@
-from ultralytics.models.rt_irca.utils.activation_hooks import ActivationHooks
-from typing import Any, List
+from typing import Any
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from ultralytics.models.yolo.model import YOLO
 from ultralytics.utils.loss import v8DetectionLoss
-
+from .activation_hooks import ActivationHooks
 
 class MLKDLoss(v8DetectionLoss):
     """Multi-Level Knowledge Distillation (MLKD)"""
@@ -26,6 +25,8 @@ class MLKDLoss(v8DetectionLoss):
         self.has_mut = model.has_mut
         self.teacher_model = model.teacher
         self.layer_indices = model.layer_indices
+        self.student_channels = model.student_channels
+        self.teacher_channels = model.teacher_channels
 
         self.device = next(model.parameters()).device
 
@@ -40,37 +41,29 @@ class MLKDLoss(v8DetectionLoss):
         self.teacher_activations = self.teacher_activation_hooks.activations
         self.teacher_activation_hooks.register_hooks(self.teacher_model.model, self.layer_indices)
 
+        # Get the model's dtype to ensure consistency
+        model_dtype = next(model.parameters()).dtype
+
         # relevance loss modules
-        self.l_rev_modules = [
-            Attention_Loss2(in_channel=256, out_channel=512, weight=self.alpha, temp=self.temperature)
-            .to(self.device)
-            .train(),
-            Attention_Loss2(in_channel=128, out_channel=256, weight=self.alpha, temp=self.temperature)
-            .to(self.device)
-            .train(),
-            Attention_Loss2(in_channel=256, out_channel=512, weight=self.alpha, temp=self.temperature)
-            .to(self.device)
-            .train(),
-            Attention_Loss2(in_channel=512, out_channel=512, weight=self.alpha, temp=self.temperature)
-            .to(self.device)
-            .train(),
-        ]
+        if self.has_rev:
+            self.l_rev_modules = [
+                Attention_Loss2(self.student_channels[idx], self.teacher_channels[idx], self.alpha, self.temperature).to(self.device).to(dtype=model_dtype).train()
+                for idx in self.layer_indices
+            ]
 
         # global feature distillation loss modules
-        self.l_irca_modules = [
-            GC_FocalModulationLoss(in_channel=256, out_channel=512, weight=self.beta).to(self.device).train(),
-            GC_FocalModulationLoss(in_channel=128, out_channel=256, weight=self.beta).to(self.device).train(),
-            GC_FocalModulationLoss(in_channel=256, out_channel=512, weight=self.beta).to(self.device).train(),
-            GC_FocalModulationLoss(in_channel=512, out_channel=512, weight=self.beta).to(self.device).train(),
-        ]
+        if self.has_irca:
+            self.l_irca_modules = [
+                GC_FocalModulationLoss(self.student_channels[idx], self.teacher_channels[idx], self.beta).to(self.device).to(dtype=model_dtype).train()
+                for idx in self.layer_indices
+            ]
 
         # mutual information loss modules
-        self.l_mut_modules = [
-            MINE9(in_channel=256, out_channel=512, weight=self.gamma).to(self.device).train(),
-            MINE9(in_channel=128, out_channel=256, weight=self.gamma).to(self.device).train(),
-            MINE9(in_channel=256, out_channel=512, weight=self.gamma).to(self.device).train(),
-            MINE9(in_channel=512, out_channel=512, weight=self.gamma).to(self.device).train(),
-        ]
+        if self.has_mut:
+            self.l_mut_modules = [
+                MINE9(self.student_channels[idx], self.teacher_channels[idx], self.gamma).to(self.device).to(dtype=model_dtype).train() 
+                for idx in self.layer_indices
+            ]
 
     def __call__(self, preds: Any, batch: dict[str, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
         """
@@ -299,8 +292,8 @@ class QueryExtractor2(nn.Module):
         b, c, h, w = x.shape
         # Initialize Linear layers dynamically on first forward
         in_features = h * w
-        self.query_extraction = nn.Linear(in_features, self.query_dim).to(x.device)
-        self.key_extraction = nn.Linear(in_features, self.query_dim).to(x.device)
+        self.query_extraction = nn.Linear(in_features, self.query_dim).to(device=x.device, dtype=x.dtype)
+        self.key_extraction = nn.Linear(in_features, self.query_dim).to(device=x.device, dtype=x.dtype)
         x = x.view(b, c, h * w)
         queries = self.query_extraction(x)
         keys = self.key_extraction(x)

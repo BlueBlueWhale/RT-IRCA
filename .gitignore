@@ -178,6 +178,6 @@ pnnx*
 # calibration image
 calibration_*.npy
 
-# paper / visualization / figures / tables
-paper/
-ultralytics/models/rt_irca/tests/
+# Visualization: figures / tables / charts
+exp/visualization/
+exp/tests/

@@ -76,6 +76,9 @@ dependencies = [
     "ultralytics-thop>=2.0.0", # FLOPs computation https://github.com/ultralytics/thop
     "jupyter>=1.1.1",
     "pandas>=2.3.3",
+    "scikit-image>=0.25.2",
+    "tqdm>=4.67.1",
+    "wandb>=0.22.2",
 ]
 
 # Optional dependencies ------------------------------------------------------------------------------------------------

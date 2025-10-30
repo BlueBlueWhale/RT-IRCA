@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ultralytics.models.rt_irca.model import RTIRCA
+from .model import RTIRCA
 from ultralytics.models.yolo.detect import DetectionTrainer
 from ultralytics.utils import RANK
 
@@ -32,6 +32,8 @@ class RTIRCATrainer(DetectionTrainer):
             has_mut=self.args.has_mut,
             teacher=self.args.teacher,
             layer_indices=self.args.layer_indices,
+            student_channels=self.args.student_channels,
+            teacher_channels=self.args.teacher_channels,
         )
         if weights:
             model.load(weights)

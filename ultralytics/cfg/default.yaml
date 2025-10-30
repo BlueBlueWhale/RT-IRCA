@@ -46,7 +46,9 @@ has_rev: True # (bool) whether the knowlage distillation use the relevance loss
 has_irca: True # (bool) whether the knowlage distillation use the global feature distillation loss
 has_mut: True # (bool) whether the knowlage distillation use the mutual information loss
 teacher: # (str) path to teacher model file, i.e. yolo11l.pt or yolo11l.yaml
-layer_indices: [13, 16, 19, 22] # (List[int]) List of layer indices for knowledge distillation
+layer_indices: None # (List[int]) List of layer indices for knowledge distillation
+student_channels: None # (dict) Output channel dimensions for each layer in the student model
+teacher_channels: None # (dict) Output channel dimensions for each layer in the teacher model
 
 # Segmentation
 overlap_mask: True # (bool) merge instance masks into one mask during training (segment only)
